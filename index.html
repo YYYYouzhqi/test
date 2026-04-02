@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="color-scheme" content="light dark" />
   <title>LearnSkill</title>
+  <meta name="description" content="LearnSkill 考研信息与真实评价平台（MVP）" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root{
       --bg:#fff;
@@ -204,6 +206,104 @@
   </header>
 
   <main id="top">
+    <section class="section" id="auth" style="padding-top:28px">
+      <div class="container">
+        <h3 style="margin-bottom:6px">登录后可发布评价</h3>
+        <p class="lead" style="margin-bottom:12px">使用邮箱验证码登录（不保存密码）。</p>
+
+        <div class="panel" style="box-shadow:none">
+          <div class="panel-inner" style="grid-template-columns: 1.2fr .8fr">
+            <div>
+              <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end">
+                <label style="display:block; flex:1; min-width:240px">
+                  <span class="sr">邮箱</span>
+                  <div style="font-size:13px; color:var(--muted); margin-bottom:6px">邮箱</div>
+                  <input id="email" type="email" placeholder="name@example.com" autocomplete="email"
+                         style="width:100%; height:40px; border-radius:12px; border:1px solid var(--line); padding:0 12px; background:color-mix(in srgb, var(--bg) 80%, var(--card)); color:var(--text);" />
+                </label>
+
+                <button id="send-otp" class="btn primary" type="button">发送验证码</button>
+              </div>
+
+              <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-top:12px">
+                <label style="display:block; width:200px">
+                  <span class="sr">验证码</span>
+                  <div style="font-size:13px; color:var(--muted); margin-bottom:6px">验证码</div>
+                  <input id="otp" inputmode="numeric" placeholder="6位验证码"
+                         style="width:100%; height:40px; border-radius:12px; border:1px solid var(--line); padding:0 12px; background:color-mix(in srgb, var(--bg) 80%, var(--card)); color:var(--text);" />
+                </label>
+                <button id="verify-otp" class="btn" type="button">验证并登录</button>
+                <button id="logout" class="btn" type="button" style="display:none">退出登录</button>
+              </div>
+
+              <div id="auth-msg" style="margin-top:10px; font-size:13px; color:var(--muted)">未登录</div>
+            </div>
+
+            <div class="spec">
+              <div class="spec-row"><span>当前状态</span><span class="pill" id="auth-status">未登录</span></div>
+              <div class="spec-row"><span>说明</span><span class="pill">仅MVP演示</span></div>
+              <div class="spec-row"><span>提示</span><span><kbd>先发验证码</kbd></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="teachers" style="padding-top:28px">
+      <div class="container">
+        <h3 style="margin-bottom:6px">老师目录（MVP）</h3>
+        <p class="lead" style="margin-bottom:12px">先用样例数据跑通“查看老师 → 评价”。后续再批量导入学校/学院/专业。</p>
+
+        <div class="grid" id="teacher-list"></div>
+      </div>
+    </section>
+
+    <section class="section" id="teacher-detail" style="padding-top:28px; display:none">
+      <div class="container">
+        <h3 style="margin-bottom:6px" id="t-name">老师</h3>
+        <p class="lead" id="t-meta"></p>
+
+        <div class="panel" style="box-shadow:none">
+          <div class="panel-inner" style="grid-template-columns: 1.2fr .8fr">
+            <div>
+              <h2 style="margin:0 0 8px; font-size:20px">发表评价</h2>
+              <p style="margin:0 0 12px; color:var(--muted); font-size:13px">请勿发布隐私信息或人身攻击。建议写具体事实与体验。</p>
+
+              <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end">
+                <label style="display:block; width:160px">
+                  <div style="font-size:13px; color:var(--muted); margin-bottom:6px">评分（1-5）</div>
+                  <input id="rating" type="number" min="1" max="5" value="5"
+                         style="width:100%; height:40px; border-radius:12px; border:1px solid var(--line); padding:0 12px; background:color-mix(in srgb, var(--bg) 80%, var(--card)); color:var(--text);" />
+                </label>
+              </div>
+
+              <label style="display:block; margin-top:10px">
+                <div style="font-size:13px; color:var(--muted); margin-bottom:6px">评价内容</div>
+                <textarea id="review" rows="5" placeholder="例如：是否认真指导、沟通方式、是否压榨、组里氛围等（2000字以内）"
+                          style="width:100%; border-radius:12px; border:1px solid var(--line); padding:10px 12px; background:color-mix(in srgb, var(--bg) 80%, var(--card)); color:var(--text);"></textarea>
+              </label>
+
+              <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px">
+                <button id="submit-review" class="btn primary" type="button">提交评价</button>
+                <button id="back" class="btn" type="button">返回列表</button>
+              </div>
+              <div id="review-msg" style="margin-top:10px; font-size:13px; color:var(--muted)"></div>
+            </div>
+
+            <div class="spec">
+              <div class="spec-row"><span>学校</span><span class="pill" id="t-school"></span></div>
+              <div class="spec-row"><span>学院</span><span class="pill" id="t-college"></span></div>
+              <div class="spec-row"><span>研究方向</span><span class="pill" id="t-research"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <h3 style="margin-bottom:10px">最新评价</h3>
+        <div class="grid" id="review-list"></div>
+      </div>
+    </section>
     <section class="hero">
       <div class="container">
         <div class="kicker">Education · Skills · Growth</div>
@@ -332,6 +432,220 @@
 
   <script>
     document.getElementById('y').textContent = new Date().getFullYear();
+
+    const SUPABASE_URL = "https://jstakngxxmshvwkulgoz.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_xcnOLLD6190iiSemC8sdPQ_RAbIs_xv";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const el = (id) => document.getElementById(id);
+
+    let currentTeacher = null;
+
+    function setAuthUI(session){
+      const loggedIn = !!session?.user;
+      el('auth-status').textContent = loggedIn ? '已登录' : '未登录';
+      el('auth-msg').textContent = loggedIn ? `已登录：${session.user.email}` : '未登录';
+      el('logout').style.display = loggedIn ? 'inline-flex' : 'none';
+    }
+
+    async function refreshSession(){
+      const { data } = await supabase.auth.getSession();
+      setAuthUI(data.session);
+    }
+
+    async function seedIfEmpty(){
+      const { data: schools } = await supabase.from('schools').select('id').limit(1);
+      if (schools && schools.length > 0) return;
+
+      const { data: s, error: se } = await supabase.from('schools').insert({
+        name: '示例大学', province: '示例省', city: '示例市'
+      }).select('id').single();
+      if (se) throw se;
+
+      const { data: c, error: ce } = await supabase.from('colleges').insert({
+        school_id: s.id, name: '计算机学院'
+      }).select('id').single();
+      if (ce) throw ce;
+
+      const { error: te } = await supabase.from('teachers').insert({
+        school_id: s.id,
+        college_id: c.id,
+        name: '张老师',
+        title: '副教授',
+        research: '机器学习 / 数据挖掘',
+        homepage: ''
+      });
+      if (te) throw te;
+    }
+
+    function showList(){
+      el('teacher-detail').style.display = 'none';
+      el('teachers').style.display = 'block';
+      window.scrollTo({ top: el('teachers').offsetTop - 30, behavior: 'smooth' });
+    }
+
+    function showDetail(){
+      el('teachers').style.display = 'none';
+      el('teacher-detail').style.display = 'block';
+      window.scrollTo({ top: el('teacher-detail').offsetTop - 30, behavior: 'smooth' });
+    }
+
+    async function loadTeachers(){
+      const { data, error } = await supabase
+        .from('teachers')
+        .select('id,name,title,research,school:schools(name),college:colleges(name)')
+        .order('id', { ascending: true });
+      if (error) throw error;
+
+      const root = el('teacher-list');
+      root.innerHTML = '';
+      data.forEach((t) => {
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.style.cursor = 'pointer';
+        card.innerHTML = `
+          <h4 class="card-title">${t.name} <span class="pill">${t.title ?? '老师'}</span></h4>
+          <p>${t.school?.name ?? ''} · ${t.college?.name ?? ''}</p>
+          <p style="margin-top:8px">方向：${t.research ?? '—'}</p>
+        `;
+        card.addEventListener('click', () => openTeacher(t.id));
+        root.appendChild(card);
+      });
+    }
+
+    async function openTeacher(teacherId){
+      const { data: t, error } = await supabase
+        .from('teachers')
+        .select('id,name,title,research,school:schools(name),college:colleges(name)')
+        .eq('id', teacherId)
+        .single();
+      if (error) throw error;
+
+      currentTeacher = t;
+      el('t-name').textContent = `${t.name}`;
+      el('t-meta').textContent = `${t.title ?? ''}`;
+      el('t-school').textContent = t.school?.name ?? '—';
+      el('t-college').textContent = t.college?.name ?? '—';
+      el('t-research').textContent = t.research ?? '—';
+
+      await loadReviews(t.id);
+      showDetail();
+    }
+
+    async function loadReviews(teacherId){
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('id,rating,content,created_at,user_id')
+        .eq('teacher_id', teacherId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+
+      const root = el('review-list');
+      root.innerHTML = '';
+
+      if (!data.length){
+        const empty = document.createElement('div');
+        empty.className = 'card';
+        empty.innerHTML = '<p>暂无评价，成为第一个评价的人。</p>';
+        root.appendChild(empty);
+        return;
+      }
+
+      data.forEach((r) => {
+        const card = document.createElement('article');
+        card.className = 'card';
+        const dt = new Date(r.created_at);
+        card.innerHTML = `
+          <h4 class="card-title">评分 ${r.rating}/5 <span class="pill">${dt.toLocaleString()}</span></h4>
+          <p style="white-space:pre-wrap">${escapeHtml(r.content)}</p>
+        `;
+        root.appendChild(card);
+      });
+    }
+
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;');
+    }
+
+    el('send-otp').addEventListener('click', async () => {
+      el('auth-msg').textContent = '发送中…';
+      const email = el('email').value.trim();
+      if (!email) { el('auth-msg').textContent = '请先输入邮箱'; return; }
+
+      const { error } = await supabase.auth.signInWithOtp({ email });
+      el('auth-msg').textContent = error ? `发送失败：${error.message}` : '验证码已发送（请查收邮箱）';
+    });
+
+    el('verify-otp').addEventListener('click', async () => {
+      el('auth-msg').textContent = '验证中…';
+      const email = el('email').value.trim();
+      const token = el('otp').value.trim();
+      if (!email || !token) { el('auth-msg').textContent = '请输入邮箱和验证码'; return; }
+
+      const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
+      if (error) {
+        el('auth-msg').textContent = `登录失败：${error.message}`;
+        return;
+      }
+      setAuthUI(data.session);
+      el('auth-msg').textContent = '登录成功';
+    });
+
+    el('logout').addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      setAuthUI(null);
+      el('auth-msg').textContent = '已退出';
+    });
+
+    el('submit-review').addEventListener('click', async () => {
+      el('review-msg').textContent = '';
+      const { data: sess } = await supabase.auth.getSession();
+      if (!sess.session?.user) {
+        el('review-msg').textContent = '请先登录再提交评价。';
+        return;
+      }
+      if (!currentTeacher) return;
+
+      const rating = Number(el('rating').value);
+      const content = el('review').value.trim();
+      if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+        el('review-msg').textContent = '评分必须是 1 到 5。';
+        return;
+      }
+      if (!content) { el('review-msg').textContent = '请填写评价内容。'; return; }
+
+      const { error } = await supabase.from('reviews').insert({
+        teacher_id: currentTeacher.id,
+        user_id: sess.session.user.id,
+        rating,
+        content
+      });
+      if (error) {
+        el('review-msg').textContent = `提交失败：${error.message}`;
+        return;
+      }
+
+      el('review').value = '';
+      el('review-msg').textContent = '提交成功';
+      await loadReviews(currentTeacher.id);
+    });
+
+    el('back').addEventListener('click', () => showList());
+
+    supabase.auth.onAuthStateChange((_event, session) => setAuthUI(session));
+
+    (async () => {
+      await refreshSession();
+      await seedIfEmpty();
+      await loadTeachers();
+    })().catch((e) => {
+      console.error(e);
+      el('teacher-list').innerHTML = `<article class="card"><p>初始化失败：${escapeHtml(e.message ?? String(e))}</p></article>`;
+    });
   </script>
 </body>
 </html>
