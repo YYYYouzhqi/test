@@ -435,7 +435,11 @@
 
     const SUPABASE_URL = "https://jstakngxxmshvwkulgoz.sb.co";
     const SUPABASE_ANON_KEY = "sb_publishable_xcnOLLD6190iiSemC8sdPQ_RAbIs_xv";
-    const sb = window.sb.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const sbGlobal = window.supabase;
+    if (!sbGlobal || typeof sbGlobal.createClient !== 'function') {
+      throw new Error('Supabase SDK 未加载：请检查 Network 是否成功加载 @supabase/supabase-js 脚本（以及是否被 CSP/插件拦截）');
+    }
+    const sb = sbGlobal.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const el = (id) => document.getElementById(id);
 
