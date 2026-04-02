@@ -433,9 +433,9 @@
   <script>
     document.getElementById('y').textContent = new Date().getFullYear();
 
-    const SUPABASE_URL = "https://jstakngxxmshvwkulgoz.supabase.co";
+    const SUPABASE_URL = "https://jstakngxxmshvwkulgoz.sb.co";
     const SUPABASE_ANON_KEY = "sb_publishable_xcnOLLD6190iiSemC8sdPQ_RAbIs_xv";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const sb = window.sb.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const el = (id) => document.getElementById(id);
 
@@ -449,25 +449,25 @@
     }
 
     async function refreshSession(){
-      const { data } = await supabase.auth.getSession();
+      const { data } = await sb.auth.getSession();
       setAuthUI(data.session);
     }
 
     async function seedIfEmpty(){
-      const { data: schools } = await supabase.from('schools').select('id').limit(1);
+      const { data: schools } = await sb.from('schools').select('id').limit(1);
       if (schools && schools.length > 0) return;
 
-      const { data: s, error: se } = await supabase.from('schools').insert({
+      const { data: s, error: se } = await sb.from('schools').insert({
         name: '示例大学', province: '示例省', city: '示例市'
       }).select('id').single();
       if (se) throw se;
 
-      const { data: c, error: ce } = await supabase.from('colleges').insert({
+      const { data: c, error: ce } = await sb.from('colleges').insert({
         school_id: s.id, name: '计算机学院'
       }).select('id').single();
       if (ce) throw ce;
 
-      const { error: te } = await supabase.from('teachers').insert({
+      const { error: te } = await sb.from('teachers').insert({
         school_id: s.id,
         college_id: c.id,
         name: '张老师',
@@ -576,7 +576,7 @@
       const email = el('email').value.trim();
       if (!email) { el('auth-msg').textContent = '请先输入邮箱'; return; }
 
-      const { error } = await supabase.auth.signInWithOtp({ email });
+      const { error } = await sb.auth.signInWithOtp({ email });
       el('auth-msg').textContent = error ? `发送失败：${error.message}` : '验证码已发送（请查收邮箱）';
     });
 
@@ -586,7 +586,7 @@
       const token = el('otp').value.trim();
       if (!email || !token) { el('auth-msg').textContent = '请输入邮箱和验证码'; return; }
 
-      const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
+      const { data, error } = await sb.auth.verifyOtp({ email, token, type: 'email' });
       if (error) {
         el('auth-msg').textContent = `登录失败：${error.message}`;
         return;
@@ -596,14 +596,14 @@
     });
 
     el('logout').addEventListener('click', async () => {
-      await supabase.auth.signOut();
+      await sb.auth.signOut();
       setAuthUI(null);
       el('auth-msg').textContent = '已退出';
     });
 
     el('submit-review').addEventListener('click', async () => {
       el('review-msg').textContent = '';
-      const { data: sess } = await supabase.auth.getSession();
+      const { data: sess } = await sb.auth.getSession();
       if (!sess.session?.user) {
         el('review-msg').textContent = '请先登录再提交评价。';
         return;
@@ -618,7 +618,7 @@
       }
       if (!content) { el('review-msg').textContent = '请填写评价内容。'; return; }
 
-      const { error } = await supabase.from('reviews').insert({
+      const { error } = await sb.from('reviews').insert({
         teacher_id: currentTeacher.id,
         user_id: sess.session.user.id,
         rating,
@@ -636,7 +636,7 @@
 
     el('back').addEventListener('click', () => showList());
 
-    supabase.auth.onAuthStateChange((_event, session) => setAuthUI(session));
+    sb.auth.onAuthStateChange((_event, session) => setAuthUI(session));
 
     (async () => {
       await refreshSession();
