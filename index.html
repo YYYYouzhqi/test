@@ -1,5 +1,337 @@
 <!doctype html>
-  <html>
-    <head><meta charset="utf-8"><title>My Site</title></head>
-    <body>Hello World</body>
-  </html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>LearnSkill</title>
+  <style>
+    :root{
+      --bg:#fff;
+      --text:#111;
+      --muted:#6e6e73;
+      --line:#e5e5ea;
+      --card:#f5f5f7;
+      --accent:#0071e3;
+      --shadow: 0 18px 40px rgba(0,0,0,.10);
+      --radius: 22px;
+      --max: 1120px;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg:#0b0b0f;
+        --text:#f5f5f7;
+        --muted:#a1a1a6;
+        --line:#2a2a2e;
+        --card:#16161a;
+        --shadow: 0 18px 40px rgba(0,0,0,.45);
+      }
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font: 16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,
+            "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+      letter-spacing:.01em;
+    }
+    a{color:inherit;text-decoration:none}
+    .container{max-width:var(--max);margin:0 auto;padding:0 20px}
+
+    /* Top nav */
+    .nav{
+      position:sticky;top:0;z-index:20;
+      backdrop-filter:saturate(180%) blur(18px);
+      -webkit-backdrop-filter:saturate(180%) blur(18px);
+      background: color-mix(in srgb, var(--bg) 75%, transparent);
+      border-bottom:1px solid var(--line);
+    }
+    .nav-inner{
+      height:48px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+    }
+    .brand{
+      display:flex;align-items:center;gap:10px;
+      font-weight:600;
+      letter-spacing:.02em;
+    }
+    .dot{
+      width:10px;height:10px;border-radius:50%;
+      background: radial-gradient(circle at 30% 30%, #fff, #a7c7ff 35%, #2a6fff 70%, #0037a8);
+      box-shadow:0 0 0 3px color-mix(in srgb, var(--card) 70%, transparent);
+    }
+    .nav-links{display:flex;align-items:center;gap:18px;color:var(--muted);font-size:13px}
+    .nav-links a{padding:6px 8px;border-radius:10px}
+    .nav-links a:hover{background: color-mix(in srgb, var(--card) 70%, transparent); color:var(--text)}
+    .nav-cta{
+      display:flex;align-items:center;gap:10px;
+      font-size:13px;
+    }
+    .btn{
+      display:inline-flex;align-items:center;justify-content:center;
+      height:32px;padding:0 12px;border-radius:999px;
+      border:1px solid var(--line);
+      background: color-mix(in srgb, var(--bg) 80%, var(--card));
+      color:var(--text);
+      cursor:pointer;
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+      user-select:none;
+    }
+    .btn:hover{transform: translateY(-1px); box-shadow:0 10px 22px rgba(0,0,0,.08)}
+    .btn.primary{background:var(--accent);border-color:transparent;color:white}
+    .btn.primary:hover{box-shadow:0 14px 28px rgba(0,113,227,.25)}
+
+    /* Hero */
+    .hero{
+      padding: 72px 0 26px;
+      text-align:center;
+    }
+    .kicker{color:var(--muted);font-size:14px;letter-spacing:.18em;text-transform:uppercase}
+    .headline{
+      margin: 14px auto 10px;
+      font-size: clamp(40px, 5vw, 64px);
+      line-height:1.05;
+      font-weight:700;
+      letter-spacing:-.02em;
+    }
+    .subhead{
+      max-width: 860px;
+      margin: 0 auto 22px;
+      color:var(--muted);
+      font-size: clamp(16px, 2.1vw, 20px);
+    }
+    .hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+    .hero-note{margin-top:14px;color:var(--muted);font-size:12px}
+
+    /* Showcase */
+    .showcase{
+      margin: 26px auto 0;
+      max-width: var(--max);
+      padding: 0 20px;
+    }
+    .panel{
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--card) 92%, transparent), color-mix(in srgb, var(--card) 72%, transparent));
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .panel-inner{
+      padding: 42px 28px;
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 26px;
+      align-items:center;
+    }
+    @media (max-width: 860px){
+      .panel-inner{grid-template-columns:1fr; padding: 30px 18px}
+    }
+    .panel h2{margin:0 0 10px;font-size:28px;letter-spacing:-.01em}
+    .panel p{margin:0;color:var(--muted)}
+    .spec{
+      background: color-mix(in srgb, var(--bg) 70%, var(--card));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px 16px;
+    }
+    .spec-row{display:flex;justify-content:space-between;gap:10px;padding:10px 8px;border-top:1px solid var(--line)}
+    .spec-row:first-child{border-top:0}
+    .spec kbd{
+      font: 12px/1.2 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      padding: 3px 6px;border:1px solid var(--line);border-bottom-width:2px;border-radius:8px;
+      background: color-mix(in srgb, var(--bg) 65%, var(--card));
+    }
+
+    /* Cards */
+    .section{padding: 54px 0 10px}
+    .section h3{margin:0 0 10px;font-size:22px;letter-spacing:-.01em}
+    .section .lead{margin:0 0 18px;color:var(--muted)}
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    @media (max-width: 980px){.grid{grid-template-columns:1fr 1fr}}
+    @media (max-width: 640px){.grid{grid-template-columns:1fr}}
+    .card{
+      border:1px solid var(--line);
+      background: color-mix(in srgb, var(--card) 75%, var(--bg));
+      border-radius: 20px;
+      padding: 18px 18px 16px;
+      transition: transform .12s ease, box-shadow .12s ease;
+      min-height: 140px;
+    }
+    .card:hover{transform: translateY(-2px); box-shadow: 0 14px 28px rgba(0,0,0,.08)}
+    .card-title{display:flex;align-items:center;gap:10px;font-weight:650;margin:0 0 8px}
+    .pill{font-size:12px;color:var(--muted);border:1px solid var(--line);padding:2px 8px;border-radius:999px}
+    .card p{margin:0;color:var(--muted)}
+
+    /* Footer */
+    footer{padding: 44px 0 56px; color:var(--muted); font-size:12px}
+    .footer-inner{border-top:1px solid var(--line); padding-top:18px; display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap}
+    .footer-links{display:flex; gap:12px; flex-wrap:wrap}
+    .footer-links a{color:var(--muted)}
+    .footer-links a:hover{color:var(--text)}
+
+    /* Tiny helpers */
+    .sr{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="#top" aria-label="LearnSkill">
+        <span class="dot" aria-hidden="true"></span>
+        <span>LearnSkill</span>
+      </a>
+
+      <nav class="nav-links" aria-label="主导航">
+        <a href="#features">功能</a>
+        <a href="#courses">课程</a>
+        <a href="#about">关于</a>
+      </nav>
+
+      <div class="nav-cta">
+        <a class="btn" href="#courses">了解更多</a>
+        <a class="btn primary" href="#start">开始学习</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container">
+        <div class="kicker">Education · Skills · Growth</div>
+        <h1 class="headline">像苹果一样简洁的学习体验。</h1>
+        <p class="subhead">LearnSkill 是一个面向个人成长的教育网站模板。你可以先用它上线一个漂亮首页，再逐步添加课程、文章、报名与支付。</p>
+
+        <div class="hero-actions" id="start">
+          <a class="btn primary" href="#courses">浏览课程</a>
+          <a class="btn" href="#features">查看功能</a>
+        </div>
+        <div class="hero-note">提示：这是纯静态页面，提交到 GitHub 后会自动更新到 learnskill.top。</div>
+      </div>
+    </section>
+
+    <section class="showcase">
+      <div class="panel" role="region" aria-label="产品展示">
+        <div class="panel-inner">
+          <div>
+            <h2>专注内容本身。</h2>
+            <p>大留白、强层级、轻交互——你可以把这里替换成你的课程主打卖点、师资介绍或最新活动。</p>
+            <div class="hero-actions" style="justify-content:flex-start;margin-top:16px">
+              <a class="btn primary" href="#about">了解我们</a>
+              <a class="btn" href="#features">为什么选择 LearnSkill</a>
+            </div>
+          </div>
+          <div class="spec" aria-label="关键参数">
+            <div class="spec-row"><span>上线方式</span><span class="pill">GitHub Pages</span></div>
+            <div class="spec-row"><span>域名</span><span class="pill">learnskill.top</span></div>
+            <div class="spec-row"><span>编辑</span><span><kbd>index.html</kbd></span></div>
+            <div class="spec-row"><span>更新</span><span class="pill">自动部署</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="container">
+        <h3>基础功能（你可以逐步扩展）</h3>
+        <p class="lead">先把页面跑起来，再一步步加：课程页、文章页、报名表单、后台管理。</p>
+
+        <div class="grid">
+          <article class="card">
+            <h4 class="card-title">清爽首页 <span class="pill">Hero</span></h4>
+            <p>适合展示一句主张 + 两个 CTA，引导用户进入课程或咨询。</p>
+          </article>
+          <article class="card">
+            <h4 class="card-title">模块化卡片 <span class="pill">Cards</span></h4>
+            <p>用卡片展示课程方向、服务内容、学习路径。</p>
+          </article>
+          <article class="card">
+            <h4 class="card-title">暗色模式 <span class="pill">Auto</span></h4>
+            <p>跟随系统自动切换明暗主题，保持高级感。</p>
+          </article>
+          <article class="card">
+            <h4 class="card-title">移动端适配 <span class="pill">Responsive</span></h4>
+            <p>手机、平板、电脑都能有良好排版。</p>
+          </article>
+          <article class="card">
+            <h4 class="card-title">快速修改 <span class="pill">Single file</span></h4>
+            <p>一个文件就能先上线，后续再拆分成 CSS/多页面。</p>
+          </article>
+          <article class="card">
+            <h4 class="card-title">可演进 <span class="pill">Next</span></h4>
+            <p>后续可接入表单、支付、课程系统或自建后端。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="courses">
+      <div class="container">
+        <h3>示例课程（占位内容）</h3>
+        <p class="lead">把下面的标题、描述换成你的真实课程即可。</p>
+
+        <div class="grid">
+          <article class="card">
+            <h4 class="card-title">学习方法与效率</h4>
+            <p>建立个人学习系统：目标拆解、反馈闭环、复盘迭代。</p>
+          </article>
+          <article class="card">
+            <h4 class="card-title">编程入门（零基础）</h4>
+            <p>从思维到实践：用项目驱动掌握一门语言与基本工程能力。</p>
+          </article>
+          <article class="card">
+            <h4 class="card-title">职业技能提升</h4>
+            <p>沟通表达、写作汇报、结构化思考，提升职场影响力。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="about">
+      <div class="container">
+        <h3>关于 LearnSkill</h3>
+        <p class="lead">这里写你的机构/个人介绍、愿景和联系方式。</p>
+        <div class="panel" style="box-shadow:none">
+          <div class="panel-inner">
+            <div>
+              <h2 style="margin:0 0 10px">让学习回到简单。</h2>
+              <p>如果你准备做更完整的网站：可以新增 <strong>about.html</strong>、<strong>contact.html</strong>，或接入表单（如报名/咨询）。</p>
+            </div>
+            <div class="spec">
+              <div class="spec-row"><span>联系邮箱</span><span class="pill">hello@learnskill.top</span></div>
+              <div class="spec-row"><span>微信/电话</span><span class="pill">（填写你的）</span></div>
+              <div class="spec-row"><span>地址</span><span class="pill">（可选）</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-inner">
+      <div>
+        <div>© <span id="y"></span> LearnSkill. All rights reserved.</div>
+        <div style="margin-top:6px">备案信息（如需要）可放在这里。</div>
+      </div>
+      <div class="footer-links">
+        <a href="#features">功能</a>
+        <a href="#courses">课程</a>
+        <a href="#about">关于</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('y').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
