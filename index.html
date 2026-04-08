@@ -507,7 +507,7 @@
           <p>${t.schoolName ?? ''} · ${t.collegeName ?? ''}</p>
           <p style="margin-top:8px">方向：${t.research ?? '—'}</p>
         `;
-        card.addEventListener('click', () => openTeacher(t.id));
+        card.addEventListener('click', () => openTeacher(t._id || t.id));
         root.appendChild(card);
       });
     }
