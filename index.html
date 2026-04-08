@@ -442,10 +442,17 @@
         body: JSON.stringify(payload ?? {})
       });
       const text = await resp.text();
-      let json;
-      try { json = JSON.parse(text); } catch { json = { ok: false, error: text }; }
-      if (!resp.ok) throw new Error(json?.error || `HTTP ${resp.status}`);
-      return json;
+      let outer;                                                                                                                                                                                                                            
+      try { outer = JSON.parse(text); } catch { outer = { ok: false, error: text }; }                                                                                                                                                       
+                          
+      // 兼容 CloudBase HTTP 访问服务：函数可能返回 { statusCode, headers, body: "{...}" }                                                                                                                                                  
+      let data = outer;                                                                                                                                                                                                                     
+      if (outer && typeof outer === 'object' && typeof outer.body === 'string') {                                                                                                                                                           
+        try { data = JSON.parse(outer.body); } catch { data = { ok: false, error: outer.body }; }                                                                                                                                           
+      }                                                                                                                                                                                                                                     
+                                                                                                                                                                                                                                         
+      if (!resp.ok) throw new Error(data?.error || outer?.error || `HTTP ${resp.status}`);                                                                                                                                                  
+      return data;
     }
 
     function setAuthUI(_session){
