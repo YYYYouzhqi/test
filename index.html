@@ -6,7 +6,6 @@
   <meta name="color-scheme" content="light dark" />
   <title>LearnSkill</title>
   <meta name="description" content="LearnSkill 考研信息与真实评价平台（MVP）" />
-  <script src="https://unpkg.com/@supabase/supabase-js@2" onload="window.__sbLoaded=true" onerror="window.__sbLoaded=false"></script>
   <style>
     :root{
       --bg:#fff;
@@ -433,54 +432,45 @@
   <script>
     document.getElementById('y').textContent = new Date().getFullYear();
 
-    const SUPABASE_URL = "https://jstakngxxmshvwkulgoz.sb.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_xcnOLLD6190iiSemC8sdPQ_RAbIs_xv";
-    const sbGlobal = window.supabase;
-    if (!sbGlobal || typeof sbGlobal.createClient !== 'function') {
-      throw new Error('Supabase SDK 未加载：请检查 Network 是否成功加载 @supabase/supabase-js 脚本（以及是否被 CSP/插件拦截）');
+    const API_BASE = "https://learnskill-mvp-3gbuxyln3c62e339-1418877972.ap-shanghai.app.tcloudbase.com";
+
+    async function callFunction(name, payload) {
+      const url = `${API_BASE}/${name}`;
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload ?? {})
+      });
+      const text = await resp.text();
+      let json;
+      try { json = JSON.parse(text); } catch { json = { ok: false, error: text }; }
+      if (!resp.ok) throw new Error(json?.error || `HTTP ${resp.status}`);
+      return json;
     }
-    const sb = sbGlobal.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function setAuthUI(_session){
+      el('auth-status').textContent = '暂未接入登录';
+      el('auth-msg').textContent = '当前为匿名评价 MVP（后续可加手机号登录）';
+      el('logout').style.display = 'none';
+    }
+
+    async function refreshSession(){ setAuthUI(null); }
+
+    async function seedIfEmpty(){
+      // CloudBase 由你在控制台手动插入 teachers 样例数据；这里不自动写。
+    }
 
     const el = (id) => document.getElementById(id);
 
     let currentTeacher = null;
 
-    function setAuthUI(session){
-      const loggedIn = !!session?.user;
-      el('auth-status').textContent = loggedIn ? '已登录' : '未登录';
-      el('auth-msg').textContent = loggedIn ? `已登录：${session.user.email}` : '未登录';
-      el('logout').style.display = loggedIn ? 'inline-flex' : 'none';
+    function setAuthUI(_session){
+      el('auth-status').textContent = '匿名模式';
+      el('auth-msg').textContent = '当前为匿名评价 MVP（后续可加手机号登录）';
+      el('logout').style.display = 'none';
     }
 
-    async function refreshSession(){
-      const { data } = await sb.auth.getSession();
-      setAuthUI(data.session);
-    }
-
-    async function seedIfEmpty(){
-      const { data: schools } = await sb.from('schools').select('id').limit(1);
-      if (schools && schools.length > 0) return;
-
-      const { data: s, error: se } = await sb.from('schools').insert({
-        name: '示例大学', province: '示例省', city: '示例市'
-      }).select('id').single();
-      if (se) throw se;
-
-      const { data: c, error: ce } = await sb.from('colleges').insert({
-        school_id: s.id, name: '计算机学院'
-      }).select('id').single();
-      if (ce) throw ce;
-
-      const { error: te } = await sb.from('teachers').insert({
-        school_id: s.id,
-        college_id: c.id,
-        name: '张老师',
-        title: '副教授',
-        research: '机器学习 / 数据挖掘',
-        homepage: ''
-      });
-      if (te) throw te;
-    }
+    // refreshSession / seedIfEmpty replaced by CloudBase stubs above
 
     function showList(){
       el('teacher-detail').style.display = 'none';
@@ -495,11 +485,9 @@
     }
 
     async function loadTeachers(){
-      const { data, error } = await supabase
-        .from('teachers')
-        .select('id,name,title,research,school:schools(name),college:colleges(name)')
-        .order('id', { ascending: true });
-      if (error) throw error;
+      const res = await callFunction('listTeachers', {});
+      if (!res.ok) throw new Error(res.error || 'listTeachers failed');
+      const data = res.data || [];
 
       const root = el('teacher-list');
       root.innerHTML = '';
@@ -509,7 +497,7 @@
         card.style.cursor = 'pointer';
         card.innerHTML = `
           <h4 class="card-title">${t.name} <span class="pill">${t.title ?? '老师'}</span></h4>
-          <p>${t.school?.name ?? ''} · ${t.college?.name ?? ''}</p>
+          <p>${t.schoolName ?? ''} · ${t.collegeName ?? ''}</p>
           <p style="margin-top:8px">方向：${t.research ?? '—'}</p>
         `;
         card.addEventListener('click', () => openTeacher(t.id));
@@ -518,33 +506,22 @@
     }
 
     async function openTeacher(teacherId){
-      const { data: t, error } = await supabase
-        .from('teachers')
-        .select('id,name,title,research,school:schools(name),college:colleges(name)')
-        .eq('id', teacherId)
-        .single();
-      if (error) throw error;
+      const res = await callFunction('getTeacher', { teacherId });
+      if (!res.ok) throw new Error(res.error || 'getTeacher failed');
 
+      const t = res.teacher;
       currentTeacher = t;
       el('t-name').textContent = `${t.name}`;
       el('t-meta').textContent = `${t.title ?? ''}`;
-      el('t-school').textContent = t.school?.name ?? '—';
-      el('t-college').textContent = t.college?.name ?? '—';
+      el('t-school').textContent = t.schoolName ?? '—';
+      el('t-college').textContent = t.collegeName ?? '—';
       el('t-research').textContent = t.research ?? '—';
 
-      await loadReviews(t.id);
+      await renderReviews(res.reviews || []);
       showDetail();
     }
 
-    async function loadReviews(teacherId){
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('id,rating,content,created_at,user_id')
-        .eq('teacher_id', teacherId)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (error) throw error;
-
+    async function renderReviews(data){
       const root = el('review-list');
       root.innerHTML = '';
 
@@ -559,7 +536,7 @@
       data.forEach((r) => {
         const card = document.createElement('article');
         card.className = 'card';
-        const dt = new Date(r.created_at);
+        const dt = new Date(r.createdAt || r.created_at || Date.now());
         card.innerHTML = `
           <h4 class="card-title">评分 ${r.rating}/5 <span class="pill">${dt.toLocaleString()}</span></h4>
           <p style="white-space:pre-wrap">${escapeHtml(r.content)}</p>
@@ -575,43 +552,17 @@
         .replaceAll('>','&gt;');
     }
 
+    // CloudBase MVP：暂不接入登录，隐藏发送/验证按钮交互
     el('send-otp').addEventListener('click', async () => {
-      el('auth-msg').textContent = '发送中…';
-      const email = el('email').value.trim();
-      if (!email) { el('auth-msg').textContent = '请先输入邮箱'; return; }
-
-      const { error } = await sb.auth.signInWithOtp({ email });
-      el('auth-msg').textContent = error ? `发送失败：${error.message}` : '验证码已发送（请查收邮箱）';
+      el('auth-msg').textContent = '当前为匿名模式，后续可接入手机号登录。';
     });
-
     el('verify-otp').addEventListener('click', async () => {
-      el('auth-msg').textContent = '验证中…';
-      const email = el('email').value.trim();
-      const token = el('otp').value.trim();
-      if (!email || !token) { el('auth-msg').textContent = '请输入邮箱和验证码'; return; }
-
-      const { data, error } = await sb.auth.verifyOtp({ email, token, type: 'email' });
-      if (error) {
-        el('auth-msg').textContent = `登录失败：${error.message}`;
-        return;
-      }
-      setAuthUI(data.session);
-      el('auth-msg').textContent = '登录成功';
+      el('auth-msg').textContent = '当前为匿名模式，后续可接入手机号登录。';
     });
-
-    el('logout').addEventListener('click', async () => {
-      await sb.auth.signOut();
-      setAuthUI(null);
-      el('auth-msg').textContent = '已退出';
-    });
+    el('logout').addEventListener('click', async () => {});
 
     el('submit-review').addEventListener('click', async () => {
       el('review-msg').textContent = '';
-      const { data: sess } = await sb.auth.getSession();
-      if (!sess.session?.user) {
-        el('review-msg').textContent = '请先登录再提交评价。';
-        return;
-      }
       if (!currentTeacher) return;
 
       const rating = Number(el('rating').value);
@@ -622,25 +573,22 @@
       }
       if (!content) { el('review-msg').textContent = '请填写评价内容。'; return; }
 
-      const { error } = await sb.from('reviews').insert({
-        teacher_id: currentTeacher.id,
-        user_id: sess.session.user.id,
-        rating,
-        content
-      });
-      if (error) {
-        el('review-msg').textContent = `提交失败：${error.message}`;
-        return;
-      }
+      try {
+        const res = await callFunction('addReview', { teacherId: currentTeacher._id || currentTeacher.id, rating, content });
+        if (!res.ok) throw new Error(res.error || 'addReview failed');
 
-      el('review').value = '';
-      el('review-msg').textContent = '提交成功';
-      await loadReviews(currentTeacher.id);
+        el('review').value = '';
+        el('review-msg').textContent = '提交成功';
+
+        const detail = await callFunction('getTeacher', { teacherId: currentTeacher._id || currentTeacher.id });
+        if (detail.ok) await renderReviews(detail.reviews || []);
+      } catch (e) {
+        el('review-msg').textContent = `提交失败：${e.message || e}`;
+      }
     });
 
     el('back').addEventListener('click', () => showList());
 
-    sb.auth.onAuthStateChange((_event, session) => setAuthUI(session));
 
     (async () => {
       await refreshSession();
