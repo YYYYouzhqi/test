@@ -441,17 +441,18 @@
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload ?? {})
       });
+
       const text = await resp.text();
-      let outer;                                                                                                                                                                                                                            
-      try { outer = JSON.parse(text); } catch { outer = { ok: false, error: text }; }                                                                                                                                                       
-                          
-      // 兼容 CloudBase HTTP 访问服务：函数可能返回 { statusCode, headers, body: "{...}" }                                                                                                                                                  
-      let data = outer;                                                                                                                                                                                                                     
-      if (outer && typeof outer === 'object' && typeof outer.body === 'string') {                                                                                                                                                           
-        try { data = JSON.parse(outer.body); } catch { data = { ok: false, error: outer.body }; }                                                                                                                                           
-      }                                                                                                                                                                                                                                     
-                                                                                                                                                                                                                                         
-      if (!resp.ok) throw new Error(data?.error || outer?.error || `HTTP ${resp.status}`);                                                                                                                                                  
+      let outer;
+      try { outer = JSON.parse(text); } catch { outer = { ok: false, error: text }; }
+
+      // 兼容 CloudBase HTTP 访问服务：函数可能返回 { statusCode, headers, body: "{...}" }
+      let data = outer;
+      if (outer && typeof outer === 'object' && typeof outer.body === 'string') {
+        try { data = JSON.parse(outer.body); } catch { data = { ok: false, error: outer.body }; }
+      }
+
+      if (!resp.ok) throw new Error(data?.error || outer?.error || `HTTP ${resp.status}`);
       return data;
     }
 
@@ -471,10 +472,16 @@
 
     let currentTeacher = null;
 
-    function setAuthUI(_session){
-      el('auth-status').textContent = '匿名模式';
-      el('auth-msg').textContent = '当前为匿名评价 MVP（后续可加手机号登录）';
-      el('logout').style.display = 'none';
+    function setAuthUI(state){
+      const token = state?.token || localStorage.getItem('ls_token');
+      const displayName = state?.displayName || localStorage.getItem('ls_displayName');
+      const loggedIn = !!token;
+
+      el('auth-status').textContent = loggedIn ? '已登录' : '未登录';
+      el('auth-msg').textContent = loggedIn
+        ? `已登录（展示为：${displayName || '匿名用户'}）`
+        : '未登录';
+      el('logout').style.display = loggedIn ? 'inline-flex' : 'none';
     }
 
     // refreshSession / seedIfEmpty replaced by CloudBase stubs above
@@ -559,18 +566,55 @@
         .replaceAll('>','&gt;');
     }
 
-    // CloudBase MVP：暂不接入登录，隐藏发送/验证按钮交互
     el('send-otp').addEventListener('click', async () => {
-      el('auth-msg').textContent = '当前为匿名模式，后续可接入手机号登录。';
+      el('auth-msg').textContent = '发送中…';
+      const email = el('email').value.trim();
+      if (!email) { el('auth-msg').textContent = '请先输入邮箱'; return; }
+
+      try {
+        const res = await callFunction('sendEmailCode', { email });
+        if (!res.ok) throw new Error(res.error || 'send failed');
+        el('auth-msg').textContent = '验证码已发送（请查收邮箱）';
+      } catch (e) {
+        el('auth-msg').textContent = `发送失败：${e.message || e}`;
+      }
     });
+
     el('verify-otp').addEventListener('click', async () => {
-      el('auth-msg').textContent = '当前为匿名模式，后续可接入手机号登录。';
+      el('auth-msg').textContent = '验证中…';
+      const email = el('email').value.trim();
+      const code = el('otp').value.trim();
+      if (!email || !code) { el('auth-msg').textContent = '请输入邮箱和验证码'; return; }
+
+      try {
+        const res = await callFunction('verifyEmailCode', { email, code });
+        if (!res.ok) throw new Error(res.error || 'verify failed');
+
+        localStorage.setItem('ls_token', res.token);
+        localStorage.setItem('ls_displayName', res.displayName || '匿名用户');
+        setAuthUI({ token: res.token, displayName: res.displayName });
+        el('auth-msg').textContent = '登录成功';
+      } catch (e) {
+        el('auth-msg').textContent = `登录失败：${e.message || e}`;
+      }
     });
-    el('logout').addEventListener('click', async () => {});
+
+    el('logout').addEventListener('click', async () => {
+      localStorage.removeItem('ls_token');
+      localStorage.removeItem('ls_displayName');
+      setAuthUI(null);
+      el('auth-msg').textContent = '已退出';
+    });
 
     el('submit-review').addEventListener('click', async () => {
       el('review-msg').textContent = '';
       if (!currentTeacher) return;
+
+      const token = localStorage.getItem('ls_token');
+      if (!token) {
+        el('review-msg').textContent = '请先登录再提交评价。';
+        return;
+      }
 
       const rating = Number(el('rating').value);
       const content = el('review').value.trim();
@@ -581,13 +625,14 @@
       if (!content) { el('review-msg').textContent = '请填写评价内容。'; return; }
 
       try {
-        const res = await callFunction('addReview', { teacherId: currentTeacher._id || currentTeacher.id, rating, content });
+        const teacherId = currentTeacher._id || currentTeacher.id;
+        const res = await callFunction('addReview', { teacherId, rating, content, token });
         if (!res.ok) throw new Error(res.error || 'addReview failed');
 
         el('review').value = '';
         el('review-msg').textContent = '提交成功';
 
-        const detail = await callFunction('getTeacher', { teacherId: currentTeacher._id || currentTeacher.id });
+        const detail = await callFunction('getTeacher', { teacherId });
         if (detail.ok) await renderReviews(detail.reviews || []);
       } catch (e) {
         el('review-msg').textContent = `提交失败：${e.message || e}`;
@@ -598,6 +643,7 @@
 
 
     (async () => {
+      setAuthUI(null);
       await refreshSession();
       await seedIfEmpty();
       await loadTeachers();
